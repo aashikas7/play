@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Aashika Singh: Super Product World</title>
+<meta name="description" content="Play Aashika Singh's product world: a Mario-style journey from IGDTUW to PayU, Finstack, Crework, and FloBiz." />
+<meta name="author" content="Aashika Singh" />
+<meta property="og:title" content="Aashika Singh: Super Product World" />
+<meta property="og:description" content="A platformer in seven worlds: campus, PayU, Finstack, Crework, FloBiz, bonus stages, and the castle." />
+<meta property="og:type" content="website" />
+<meta property="og:image" content="https://aashikasingh-png.github.io/aashika/portrait.jpg" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23f8b800'/%3E%3Crect x='3' y='3' width='10' height='10' fill='%23c84c0c'/%3E%3Ctext x='8' y='12' font-size='10' text-anchor='middle' fill='%23fff' font-family='monospace' font-weight='bold'%3E?%3C/text%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --sky: #5c94fc;
+  --sky-deep: #3c74dc;
+  --night: #0d1531;
+  --gold: #f8b800;
+  --gold-dark: #c84c0c;
+  --pipe: #3aa832;
+  --pipe-dark: #1e7019;
+  --pipe-light: #7fd45a;
+  --brick: #c84c0c;
+  --brick-dark: #8c3006;
+  --ground: #e7b56b;
+  --ink: #181820;
+  --paper: #fff8e7;
+  --hud: "Press Start 2P", monospace;
+  --term: "VT323", monospace;
+}
+* { box-sizing: border-box; margin: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--sky);
+  color: var(--ink);
+  font-family: var(--term);
+  font-size: 1.35rem;
+  line-height: 1.35;
+  overflow-x: clip;
+}
+img { display: block; max-width: 100%; }
+a { color: inherit; }
+
+/* ---------- pixel sprites ---------- */
+.px { image-rendering: pixelated; }
+
+/* ---------- HUD ---------- */
+.hud {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.55rem 1rem;
+  background: var(--ink);
+  color: #fff;
+  font-family: var(--hud);
+  font-size: clamp(0.42rem, 1.6vw, 0.62rem);
+  text-transform: uppercase;
+}
+.hud .coin-meter { display: inline-flex; align-items: center; gap: 0.45rem; color: var(--gold); }
+.hud .coin-meter svg { width: 1em; height: 1em; }
+
+/* ---------- shared blocks ---------- */
+.block-q, .block-brick, .block-used {
+  display: inline-grid;
+  place-items: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  border: 3px solid var(--ink);
+  font-family: var(--hud);
+  font-size: 0.9rem;
+  image-rendering: pixelated;
+}
+.block-q {
+  background: var(--gold);
+  color: var(--gold-dark);
+  text-shadow: 2px 2px 0 #fff3c4;
+  box-shadow: inset -4px -4px 0 rgba(0,0,0,0.18);
+}
+.block-brick { background: var(--brick); box-shadow: inset 0 6px 0 var(--brick-dark), inset 6px 0 0 rgba(0,0,0,0.15); }
+
+.pipe {
+  position: relative;
+  width: 84px;
+  margin: 0 auto;
+}
+.pipe::before {
+  content: "";
+  display: block;
+  height: 22px;
+  background: var(--pipe-light);
+  border: 3px solid var(--ink);
+  border-bottom: none;
+  border-radius: 4px 4px 0 0;
+}
+.pipe::after {
+  content: "";
+  display: block;
+  height: 46px;
+  margin: 0 10px;
+  background: linear-gradient(90deg, var(--pipe-dark) 0 18%, var(--pipe) 18% 70%, var(--pipe-light) 70%);
+  border: 3px solid var(--ink);
+  border-top: none;
+}
+
+/* ---------- dialog boxes ---------- */
+.dialog {
+  position: relative;
+  background: var(--paper);
+  border: 4px solid var(--ink);
+  box-shadow: 8px 8px 0 rgba(0,0,0,0.35);
+  padding: 1.2rem 1.3rem;
+}
+.dialog h1, .dialog h2, .dialog h3 {
+  font-family: var(--hud);
+  line-height: 1.5;
+  text-transform: uppercase;
+}
+.dialog h1 { font-size: clamp(1rem, 4.5vw, 1.7rem); margin-bottom: 0.7rem; }
+.dialog h2 { font-size: clamp(0.85rem, 3.4vw, 1.15rem); margin: 1.1rem 0 0.5rem; color: var(--gold-dark); }
+.dialog p + p { margin-top: 0.5rem; }
+.kicker {
+  display: inline-block;
+  font-family: var(--hud);
+  font-size: 0.55rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.3rem 0.5rem;
+  background: var(--ink);
+  color: var(--gold);
+  margin-bottom: 0.7rem;
+}
+.kicker.hot { background: #d8331f; color: #fff; }
+.where {
+  font-family: var(--hud);
+  font-size: 0.6rem;
+  color: var(--sky-deep);
+  text-transform: uppercase;
+  margin-bottom: 0.8rem;
+  line-height: 1.7;
+}
+
+/* ---------- title screen ---------- */
+.title-screen {
+  position: relative;
+  min-height: 92vh;
+  display: grid;
+  place-items: center;
+  padding: 3rem 5vw 7rem;
+  background: linear-gradient(var(--sky) 0 70%, var(--sky-deep));
+  overflow: hidden;
+}
+.cloud {
+  position: absolute;
+  background: #fff;
+  border-radius: 999px;
+  opacity: 0.95;
+}
+.cloud::before, .cloud::after {
+  content: "";
+  position: absolute;
+  background: #fff;
+  border-radius: 999px;
+}
+.cloud.c1 { width: 90px; height: 30px; top: 12%; left: 8%; animation: drift 26s linear infinite; }
+.cloud.c1::before { width: 44px; height: 44px; top: -22px; left: 14px; }
+.cloud.c1::after { width: 34px; height: 34px; top: -14px; left: 46px; }
+.cloud.c2 { width: 120px; height: 34px; top: 26%; right: -10%; animation: drift 40s linear infinite reverse; }
+.cloud.c2::before { width: 56px; height: 56px; top: -28px; left: 20px; }
+.cloud.c2::after { width: 40px; height: 40px; top: -18px; left: 66px; }
+.cloud.c3 { width: 70px; height: 24px; top: 40%; left: 55%; animation: drift 33s linear infinite; }
+.cloud.c3::before { width: 34px; height: 34px; top: -17px; left: 10px; }
+.cloud.c3::after { width: 26px; height: 26px; top: -11px; left: 36px; }
+@keyframes drift {
+  from { transform: translateX(-12vw); }
+  to { transform: translateX(12vw); }
+}
+.title-card {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  gap: 1.1rem;
+  justify-items: center;
+  text-align: center;
+  max-width: 720px;
+}
+.title-logo {
+  font-family: var(--hud);
+  color: #fff;
+  text-transform: uppercase;
+  text-shadow: 4px 4px 0 var(--ink), 8px 8px 0 rgba(0,0,0,0.25);
+  line-height: 1.6;
+}
+.title-logo .l1 { display: block; font-size: clamp(1.5rem, 8vw, 3.2rem); color: var(--gold); }
+.title-logo .l2 { display: block; font-size: clamp(0.9rem, 4.6vw, 1.6rem); margin-top: 0.8rem; }
+.title-sub {
+  font-size: 1.5rem;
+  color: #fff;
+  text-shadow: 2px 2px 0 var(--ink);
+  max-width: 34rem;
+}
+.portrait-coin {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  border: 5px solid var(--ink);
+  box-shadow: inset -8px -8px 0 rgba(0,0,0,0.2), 6px 6px 0 rgba(0,0,0,0.3);
+  overflow: hidden;
+  background: var(--gold);
+}
+.portrait-coin img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 18%; }
+.player-card {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: var(--hud);
+  font-size: 0.55rem;
+  text-transform: uppercase;
+}
+.player-card span {
+  background: var(--ink);
+  color: #fff;
+  padding: 0.45rem 0.6rem;
+  border: 3px solid #000;
+}
+.player-card b { color: var(--gold); font-weight: 400; }
+.btn-start {
+  display: inline-block;
+  margin-top: 0.4rem;
+  padding: 0.9rem 1.4rem;
+  background: var(--gold);
+  border: 4px solid var(--ink);
+  box-shadow: 0 6px 0 var(--brick-dark), 8px 10px 0 rgba(0,0,0,0.3);
+  color: var(--ink);
+  font-family: var(--hud);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  text-decoration: none;
+  animation: blink 1.2s steps(2, start) infinite;
+}
+.btn-start:hover { transform: translateY(3px); box-shadow: 0 3px 0 var(--brick-dark), 6px 7px 0 rgba(0,0,0,0.3); }
+@keyframes blink { 50% { filter: brightness(1.18); } }
+.title-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.6rem; margin-top: 0.6rem; }
+.btn-8 {
+  display: inline-block;
+  padding: 0.65rem 0.9rem;
+  background: #fff;
+  border: 3px solid var(--ink);
+  box-shadow: 0 4px 0 rgba(0,0,0,0.55);
+  color: var(--ink);
+  font-family: var(--hud);
+  font-size: 0.55rem;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+.btn-8:hover { background: var(--gold); }
+.btn-8:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,0.55); }
+
+/* ground strip */
+.ground-strip {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 74px;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 44px, rgba(0,0,0,0.28) 44px 47px),
+    linear-gradient(var(--ground) 0 40px, var(--brick) 40px);
+  border-top: 4px solid var(--ink);
+}
+
+/* ---------- world map ---------- */
+.worldmap {
+  position: relative;
+  padding: 4rem 5vw 6rem;
+  background: linear-gradient(var(--sky-deep), var(--sky));
+  text-align: center;
+}
+.worldmap .dialog { max-width: 640px; margin: 0 auto 3rem; }
+.pipe-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 1.4rem 1rem;
+}
+.pipe-stop { display: grid; justify-items: center; gap: 0.4rem; text-decoration: none; width: 104px; }
+.pipe-stop .num {
+  font-family: var(--hud);
+  font-size: 0.8rem;
+  color: #fff;
+  text-shadow: 2px 2px 0 var(--ink);
+}
+.pipe-stop .name {
+  font-family: var(--hud);
+  font-size: 0.5rem;
+  text-transform: uppercase;
+  color: #fff;
+  text-shadow: 2px 2px 0 var(--ink);
+  line-height: 1.6;
+}
+.pipe-stop.now .num { color: #ff9d8a; }
+.pipe-stop:hover .pipe::before { background: #a5ec7f; }
+.pipe-stop .pipe { transform-origin: bottom; transition: transform 0.12s steps(2); }
+.pipe-stop:hover .pipe { transform: scale(1.08); }
+
+/* ---------- level sections ---------- */
+.level {
+  position: relative;
+  padding: 5rem 5vw 8rem;
+  overflow: hidden;
+}
+.level.blue { background: var(--sky); }
+.level.deep { background: linear-gradient(var(--sky) 0%, var(--sky-deep) 100%); }
+.level.underground { background: var(--night); color: #fff; }
+.level.underground .dialog { color: var(--ink); }
+.level.castle { background: linear-gradient(#7a1f1f, #4a1010); color: #fff; }
+.level.castle .dialog { color: var(--ink); }
+.level .inner { max-width: 760px; margin: 0 auto; position: relative; z-index: 2; }
+.level .decor { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
+.hill {
+  position: absolute;
+  bottom: 62px;
+  width: 150px;
+  height: 90px;
+  background: var(--pipe);
+  border: 4px solid var(--ink);
+  border-radius: 75px 75px 0 0;
+  opacity: 0.85;
+}
+.hill.left { left: -30px; }
+.hill.right { right: -20px; width: 110px; height: 66px; }
+.bush {
+  position: absolute;
+  bottom: 66px;
+  width: 110px; height: 34px;
+  background: var(--pipe-light);
+  border: 3px solid var(--ink);
+  border-radius: 999px 999px 0 0;
+}
+.float-blocks { position: absolute; display: flex; gap: 0.7rem; }
+.float-blocks.f1 { top: 3.2rem; right: 6vw; }
+.float-blocks.f2 { top: 2.4rem; left: 5vw; }
+.mission-box {
+  border: 3px dashed var(--ink);
+  background: #ffe9b8;
+  padding: 0.7rem 0.9rem;
+  margin: 0.9rem 0;
+  font-size: 1.35rem;
+}
+.log { list-style: none; padding: 0; margin-top: 0.5rem; }
+.log li { position: relative; padding-left: 1.9rem; margin: 0.55rem 0; }
+.log li::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0.28rem;
+  width: 1.05rem; height: 1.05rem;
+  background: radial-gradient(circle at 35% 35%, #ffe27a 0 25%, var(--gold) 26% 70%, var(--gold-dark) 71%);
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+}
+.stat-row { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1rem; }
+.stat-coin {
+  flex: 1 1 130px;
+  background: #fff;
+  border: 3px solid var(--ink);
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.35);
+  padding: 0.7rem 0.6rem;
+  text-align: center;
+}
+.stat-coin b {
+  display: block;
+  font-family: var(--hud);
+  font-size: 1rem;
+  color: var(--gold-dark);
+  margin-bottom: 0.35rem;
+}
+.stat-coin span { font-size: 1.15rem; line-height: 1.1; display: block; }
+
+/* encounters as power-up cards */
+.cards { display: grid; gap: 0.8rem; margin-top: 0.8rem; }
+@media (min-width: 640px) { .cards { grid-template-columns: 1fr 1fr; } }
+.card {
+  background: #fff;
+  border: 3px solid var(--ink);
+  box-shadow: 5px 5px 0 rgba(0,0,0,0.35);
+  padding: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.card h3 { font-family: var(--hud); font-size: 0.7rem; color: var(--gold-dark); line-height: 1.6; }
+.card p { font-size: 1.25rem; }
+.card .tag {
+  align-self: flex-start;
+  font-family: var(--hud);
+  font-size: 0.45rem;
+  text-transform: uppercase;
+  background: var(--ink);
+  color: var(--gold);
+  padding: 0.25rem 0.4rem;
+}
+
+/* quest blocks */
+.quest-grid { display: grid; gap: 0.9rem; margin-top: 0.8rem; }
+@media (min-width: 640px) { .quest-grid { grid-template-columns: 1fr 1fr; } }
+.quest {
+  display: flex;
+  gap: 0.8rem;
+  align-items: flex-start;
+  background: #fff;
+  border: 3px solid var(--ink);
+  box-shadow: 5px 5px 0 rgba(0,0,0,0.35);
+  padding: 0.9rem;
+  text-decoration: none;
+  transition: transform 0.1s steps(2);
+}
+.quest:hover { transform: translateY(-4px); }
+.quest .block-q { flex: 0 0 auto; }
+.quest h3 { font-family: var(--hud); font-size: 0.65rem; line-height: 1.7; color: var(--ink); }
+.quest small { display: block; font-family: var(--hud); font-size: 0.45rem; text-transform: uppercase; color: var(--sky-deep); margin-bottom: 0.3rem; }
+.quest p { font-size: 1.2rem; color: #333; margin-top: 0.25rem; }
+.quest.main { background: #fff3c4; border-color: var(--gold-dark); }
+
+/* nav between levels */
+.level-nav { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1.6rem; position: relative; z-index: 2; }
+.level-nav .btn-8 { background: var(--ink); color: #fff; }
+.level-nav .btn-8.gold { background: var(--gold); color: var(--ink); }
+
+/* flag between levels */
+.flag-run { position: absolute; right: 7vw; bottom: 74px; display: grid; justify-items: center; }
+.flag-pole { width: 6px; height: 130px; background: var(--pipe-light); border: 2px solid var(--ink); }
+.flag-tri { width: 0; height: 0; border-top: 14px solid transparent; border-bottom: 14px solid transparent; border-right: 34px solid #d8331f; margin-right: 34px; margin-bottom: -6px; }
+
+/* castle */
+.castle-art { display: grid; justify-items: center; margin-bottom: 1.2rem; }
+.castle-body {
+  width: 210px; height: 110px;
+  background: #b8906a;
+  border: 4px solid var(--ink);
+  position: relative;
+}
+.castle-body::before {
+  content: "";
+  position: absolute;
+  left: 50%; bottom: 0;
+  transform: translateX(-50%);
+  width: 54px; height: 62px;
+  background: var(--ink);
+  border-radius: 27px 27px 0 0;
+}
+.castle-towers { display: flex; gap: 120px; margin-bottom: -4px; }
+.castle-tower { width: 42px; height: 64px; background: #b8906a; border: 4px solid var(--ink); border-bottom: none; position: relative; }
+.castle-tower::before { content: ""; position: absolute; top: -16px; left: -4px; right: -4px; height: 14px; background: repeating-linear-gradient(90deg, #b8906a 0 10px, transparent 10px 15px); border: 3px solid var(--ink); border-bottom: none; }
+.castle-flag { width: 4px; height: 40px; background: var(--ink); margin-bottom: -2px; position: relative; }
+.castle-flag::after { content: ""; position: absolute; top: 0; left: 4px; border-top: 10px solid transparent; border-bottom: 10px solid transparent; border-left: 26px solid #d8331f; }
+
+.pills { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.5rem 0 1rem; padding: 0; list-style: none; }
+.pills li { border: 2px solid var(--ink); background: #fff; padding: 0.2rem 0.55rem; font-size: 1.2rem; }
+.contact-list { list-style: none; padding: 0; margin: 0.5rem 0 1rem; }
+.contact-list li { display: grid; grid-template-columns: 92px 1fr; gap: 0.5rem; padding: 0.4rem 0; border-top: 2px dashed var(--ink); align-items: baseline; }
+.contact-list span { font-family: var(--hud); font-size: 0.5rem; text-transform: uppercase; color: var(--gold-dark); }
+.contact-list a { word-break: break-all; text-decoration-thickness: 2px; }
+
+.credit {
+  text-align: center;
+  padding: 2rem 5vw 3rem;
+  background: var(--ink);
+  color: #9aa4c0;
+  font-size: 1.2rem;
+}
+.credit b { color: var(--gold); font-family: var(--hud); font-size: 0.55rem; text-transform: uppercase; display: block; margin-bottom: 0.5rem; }
+
+/* coin pop animation */
+@keyframes coinpop {
+  0% { transform: translateY(0) scale(1); opacity: 1; }
+  60% { transform: translateY(-26px) scale(1.25); opacity: 1; }
+  100% { transform: translateY(-40px) scale(0.4); opacity: 0; }
+}
+.coin-pop { animation: coinpop 0.7s steps(8) forwards; }
+
+@media (max-width: 640px) {
+  body { font-size: 1.2rem; }
+  .float-blocks.f2 { display: none; }
+  .flag-run { display: none; }
+  .level { padding: 3.5rem 5vw 6.5rem; }
+  .contact-list li { grid-template-columns: 1fr; gap: 0.1rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cloud, .btn-start { animation: none; }
+  html { scroll-behavior: auto; }
+}
+</style>
+</head>
+<body>
+
+<div class="hud">
+  <span>Aashika</span>
+  <span class="coin-meter"><svg viewBox="0 0 10 10" aria-hidden="true"><circle cx="5" cy="5" r="4.4" fill="#f8b800" stroke="#000"/><rect x="4.2" y="2.4" width="1.6" height="5.2" fill="#c84c0c"/></svg><span id="coinCount">x00</span></span>
+  <span id="hudWorld">World 1-1</span>
+  <span>Time &infin;</span>
+</div>
+
+<!-- ============ TITLE ============ -->
+<header class="title-screen" id="start">
+  <div class="cloud c1"></div><div class="cloud c2"></div><div class="cloud c3"></div>
+  <div class="title-card">
+    <div class="portrait-coin"><img src="portrait.jpg" alt="Aashika Singh at her IGDTUW convocation" /></div>
+    <h1 class="title-logo"><span class="l1">Super Aashika</span><span class="l2">Product World</span></h1>
+    <p class="title-sub">Product manager at FloBiz, building AI tools for India's small businesses. Engineer at PayU first, so the spec and the API both get cleared.</p>
+    <div class="player-card">
+      <span>Player <b>Aashika Singh</b></span>
+      <span>Class <b>APM, FloBiz</b></span>
+      <span>Base <b>Bangalore</b></span>
+    </div>
+    <a class="btn-start" href="#worldmap">Press Start</a>
+    <nav class="title-actions" aria-label="Quick links">
+      <a class="btn-8" href="mailto:aashikapm884@gmail.com">Email</a>
+      <a class="btn-8" href="https://www.linkedin.com/in/aashika7" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+      <a class="btn-8" href="https://x.com/snorlaxnotfound" target="_blank" rel="noopener noreferrer">Twitter</a>
+      <a class="btn-8" href="https://lime-polka-abf.notion.site/9a37559e352d484a8141e010d710416d" target="_blank" rel="noopener noreferrer">Resume</a>
+    </nav>
+  </div>
+  <div class="ground-strip"></div>
+</header>
+
+<!-- ============ WORLD MAP ============ -->
+<section class="worldmap" id="worldmap" data-hud="Map">
+  <div class="dialog">
+    <p class="kicker">World map</p>
+    <h1>Select a world</h1>
+    <p>Seven worlds, walked in order. Pick a pipe to warp, or scroll the whole run. World 5 is the one still being played.</p>
+  </div>
+  <nav class="pipe-row" aria-label="Level select">
+    <a class="pipe-stop" href="#w1"><span class="num">1</span><span class="pipe"></span><span class="name">Campus</span></a>
+    <a class="pipe-stop" href="#w2"><span class="num">2</span><span class="pipe"></span><span class="name">PayU</span></a>
+    <a class="pipe-stop" href="#w3"><span class="num">3</span><span class="pipe"></span><span class="name">Finstack</span></a>
+    <a class="pipe-stop" href="#w4"><span class="num">4</span><span class="pipe"></span><span class="name">Crework</span></a>
+    <a class="pipe-stop now" href="#w5"><span class="num">5</span><span class="pipe"></span><span class="name">FloBiz</span></a>
+    <a class="pipe-stop" href="#w6"><span class="num">6</span><span class="pipe"></span><span class="name">Bonus</span></a>
+    <a class="pipe-stop" href="#w7"><span class="num">7</span><span class="pipe"></span><span class="name">Castle</span></a>
+  </nav>
+</section>
+
+<!-- ============ WORLD 1: CAMPUS ============ -->
+<section class="level blue" id="w1" data-hud="World 1-1">
+  <div class="decor"><div class="hill left"></div><div class="float-blocks f1"><span class="block-q">?</span><span class="block-brick"></span><span class="block-brick"></span></div></div>
+  <div class="inner">
+    <article class="dialog">
+      <p class="kicker">World 1-1 · Cleared</p>
+      <h1>Campus</h1>
+      <p class="where">IGDTUW, Delhi · 2018 to 2022</p>
+      <p class="mission-box">Mission: learn how systems work, then lead the rooms around them.</p>
+      <p>B.Tech in Electronics and Communication Engineering. 8.2 GPA.</p>
+      <div class="stat-row">
+        <div class="stat-coin"><b>IEEE</b><span>Vice Chairperson</span></div>
+        <div class="stat-coin"><b>ECE</b><span>Association Secretary</span></div>
+        <div class="stat-coin"><b>OS</b><span>Teaching Assistant</span></div>
+        <div class="stat-coin"><b>Robotics</b><span>Club Team Lead</span></div>
+      </div>
+      <div class="level-nav">
+        <a class="btn-8" href="#worldmap">Map</a>
+        <a class="btn-8 gold" href="#w2">World 2 &rarr;</a>
+      </div>
+    </article>
+  </div>
+  <div class="flag-run"><div class="flag-tri"></div><div class="flag-pole"></div></div>
+  <div class="ground-strip"></div>
+</section>
+
+<!-- ============ WORLD 2: PAYU ============ -->
+<section class="level deep" id="w2" data-hud="World 2-1">
+  <div class="decor"><div class="hill right"></div><div class="float-blocks f2"><span class="block-brick"></span><span class="block-q">?</span></div></div>
+  <div class="inner">
+    <article class="dialog">
+      <p class="kicker">World 2-1 · Cleared</p>
+      <h1>PayU</h1>
+      <p class="where">Software Engineer · Bangalore · Jan 2022 to Apr 2024</p>
+      <p class="mission-box">Mission: ship the payments systems, and keep asking why the ticket exists.</p>
+      <ul class="log">
+        <li>Built dynamic web apps with modular design and automated pipelines, shortening development cycles by 70%. Quality gates ran on JUnit and Mockito.</li>
+        <li>Developed REST APIs that improved transaction efficiency by 30% and strengthened platform security by 95%.</li>
+        <li>Took a product from scratch with an eye on scale, security, and Kong API management.</li>
+        <li>Cut downtime by 10% and held the service at 88% uptime.</li>
+      </ul>
+      <div class="stat-row">
+        <div class="stat-coin"><b>70%</b><span>faster cycles</span></div>
+        <div class="stat-coin"><b>30%</b><span>transaction efficiency</span></div>
+        <div class="stat-coin"><b>95%</b><span>stronger security</span></div>
+        <div class="stat-coin"><b>88%</b><span>uptime</span></div>
+      </div>
+      <div class="level-nav">
+        <a class="btn-8" href="#w1">&larr; World 1</a>
+        <a class="btn-8 gold" href="#w3">World 3 &rarr;</a>
+      </div>
+    </article>
+  </div>
+  <div class="flag-run"><div class="flag-tri"></div><div class="flag-pole"></div></div>
+  <div class="ground-strip"></div>
+</section>
+
+<!-- ============ WORLD 3: FINSTACK ============ -->
+<section class="level blue" id="w3" data-hud="World 3-1">
+  <div class="decor"><div class="hill left"></div><div class="bush" style="right:8vw;"></div><div class="float-blocks f1"><span class="block-q">?</span></div></div>
+  <div class="inner">
+    <article class="dialog">
+      <p class="kicker">World 3-1 · Cleared</p>
+      <h1>Finstack</h1>
+      <p class="where">Technical Product Manager · Bangalore · Apr 2024 to Jul 2024</p>
+      <p class="mission-box">Mission: take the first product seat, next to the CEO and CTO.</p>
+      <ul class="log">
+        <li>Worked with the CEO and CTO on business requirements, design decisions, and a decision engine for onboarding.</li>
+        <li>Shaped a customer onboarding and creditworthiness platform that cut paperwork by 50%.</li>
+        <li>Owned product for a PPI management suite on M2P, Livquik, and Syntizen, and took an API wrapper live: cutting build time by 70% with dynamic web apps.</li>
+      </ul>
+      <div class="stat-row">
+        <div class="stat-coin"><b>&minus;50%</b><span>paperwork</span></div>
+        <div class="stat-coin"><b>&minus;70%</b><span>build time</span></div>
+      </div>
+      <div class="level-nav">
+        <a class="btn-8" href="#w2">&larr; World 2</a>
+        <a class="btn-8 gold" href="#w4">World 4 &rarr;</a>
+      </div>
+    </article>
+  </div>
+  <div class="flag-run"><div class="flag-tri"></div><div class="flag-pole"></div></div>
+  <div class="ground-strip"></div>
+</section>
+
+<!-- ============ WORLD 4: CREWORK ============ -->
+<section class="level deep" id="w4" data-hud="World 4-1">
+  <div class="decor"><div class="hill right"></div><div class="float-blocks f1"><span class="block-brick"></span><span class="block-q">?</span><span class="block-brick"></span></div></div>
+  <div class="inner">
+    <article class="dialog">
+      <p class="kicker">World 4-1 · Cleared · Rank 1</p>
+      <h1>Crework</h1>
+      <p class="where">Product Management Fellowship · Bangalore · Aug 2024 to Oct 2024</p>
+      <p class="mission-box">Mission: put the engineering, the customer, and the business outcome in the same job.</p>
+      <p>After PayU, the questions that stayed were larger than the ticket: why are we building this, which user problem does it solve, and how do we know it moved the business? That curiosity is what pulled the work into product. The cohort finished at rank 1. The bonus stages in World 6 are the writing from that stretch.</p>
+      <p style="font-family:var(--hud); font-size:0.7rem; margin-top:0.8rem; color:var(--gold-dark);">ALWAYS CURIOUS. ALWAYS BUILDING. ALWAYS LEARNING.</p>
+      <div class="level-nav">
+        <a class="btn-8" href="#w3">&larr; World 3</a>
+        <a class="btn-8 gold" href="#w5">World 5 &rarr;</a>
+      </div>
+    </article>
+  </div>
+  <div class="flag-run"><div class="flag-tri"></div><div class="flag-pole"></div></div>
+  <div class="ground-strip"></div>
+</section>
+
+<!-- ============ WORLD 5: FLOBIZ (now playing) ============ -->
+<section class="level blue" id="w5" data-hud="World 5-1">
+  <div class="decor"><div class="hill left"></div><div class="bush" style="left:20vw;"></div><div class="float-blocks f1"><span class="block-q">?</span><span class="block-q">?</span></div></div>
+  <div class="inner">
+    <article class="dialog">
+      <p class="kicker hot">World 5-1 · Now playing</p>
+      <h1>FloBiz</h1>
+      <p class="where">Associate Product Manager · myBillBook · Bangalore · Aug 2024 to Present</p>
+      <p class="mission-box">Mission: take products from discovery to adoption for Indian small businesses.</p>
+      <p>Great products aren't built by technology alone. They're built by understanding the right problems, and solving them in ways that last. This world is 0 to 1 AI collections and reconciliation, growth systems, and the loops that decide whether a feature is actually used. The work sits with design, engineering, and GTM.</p>
+      <ul class="log">
+        <li>Built internal growth and AI platforms, including an in-house voice agent and a CleverTap-style engagement engine, so other teams could launch and tune journeys themselves.</li>
+        <li>Led 0 to 1 discovery and pilot execution for myCashFlo.AI, from design and user testing through QA.</li>
+        <li>Shipped AI Recon and regional invoice themes, then instrumented usage, A/B tests, WhatsApp nudges, and in-app tips to see what actually stuck.</li>
+        <li>Ran GTM and customer discovery across 300+ customers and 45+ SMBs to test demand, pricing, and partnerships.</li>
+        <li>Owned third-party integrations end to end. One that lets small businesses sell on WhatsApp now drives Rs 2L+ in new monthly revenue.</li>
+      </ul>
+      <h2>Power-ups collected</h2>
+      <div class="cards">
+        <div class="card"><span class="tag">Power-up 1</span><h3>AI Recon</h3><p>A generative AI reconciliation tool that matches bank statements to invoices. It launched at <b>75%+ accuracy</b> and cut manual checks per statement by <b>60%</b>.</p></div>
+        <div class="card"><span class="tag">Power-up 2</span><h3>myCashFlo.AI</h3><p>An AI payment-collections product in discovery. Early testing shows a <b>40% renewal rate</b>, promise-to-pay capture up <b>20%</b>, and collection time down <b>15%</b>. The pilot reached 100+ users with a WhatsApp delivery rate above <b>75%</b>.</p></div>
+        <div class="card"><span class="tag">Power-up 3</span><h3>Invoice themes</h3><p>Auto-suggested seasonal and regional invoice themes. Template adoption grew <b>40%</b>, and repeat invoicing rose <b>15%</b> in the first week.</p></div>
+        <div class="card"><span class="tag">Power-up 4</span><h3>Onboarding and adoption</h3><p>Shared Ledgers cut adjustment tickets by <b>30%</b>. OCR invoice capture takes time off every bill. Onboarding drop-off fell <b>18%</b>. A/B tests and in-app nudges lifted trial-to-paid conversion by <b>8 pp</b> and repeat feature usage by <b>10 pp</b>. Cash Flow Discovery held a <b>20-26% CTR</b>.</p></div>
+      </div>
+      <div class="level-nav">
+        <a class="btn-8" href="#w4">&larr; World 4</a>
+        <a class="btn-8 gold" href="#w6">World 6 &rarr;</a>
+      </div>
+    </article>
+  </div>
+  <div class="flag-run"><div class="flag-tri"></div><div class="flag-pole"></div></div>
+  <div class="ground-strip"></div>
+</section>
+
+<!-- ============ WORLD 6: BONUS STAGES ============ -->
+<section class="level underground" id="w6" data-hud="World 6-1">
+  <div class="inner">
+    <article class="dialog">
+      <p class="kicker">World 6-1 · Bonus stages</p>
+      <h1>Side quests</h1>
+      <p class="mission-box">Mission: product thinking, written down. Hit a block to open the full write-up.</p>
+      <div class="quest-grid">
+        <a class="quest main" href="#savana"><span class="block-q">?</span><span><small>Main quest · Fashion: D2C</small><h3>Savana</h3><p>Trend velocity, social commerce, and a mobile-first shop for Gen Z in India's D2C market.</p></span></a>
+        <a class="quest" href="https://balanced-nephew-874.notion.site/p/AI-Led-Daily-Joy-Value-for-Elders-2e236817787e8064bd3cf87818c572a1" target="_blank" rel="noopener noreferrer"><span class="block-q">?</span><span><small>Elders: AI</small><h3>Marzi Moments</h3><p>A daily companion ritual for people aged 55 to 75. Loneliness here is a lack of being noticed.</p></span></a>
+        <a class="quest" href="https://bhavyaaaxdesign.notion.site/Peerlist-x-Crework-Graduation-Project-1194afb99807805b81c3f6bcd02f07c4" target="_blank" rel="noopener noreferrer"><span class="block-q">?</span><span><small>With Bhavya and Aditi</small><h3>Peerlist</h3><p>Raise daily active users 30% in a quarter and lift time per session 25%.</p></span></a>
+        <a class="quest" href="https://aashikasingh-png.github.io/aashika/cases/leap-wallet.pdf" target="_blank" rel="noopener noreferrer"><span class="block-q">?</span><span><small>Web3: growth</small><h3>Leap Wallet</h3><p>Growth channels for a crypto wallet, with metrics by day, week, and month, and a download journey by source.</p></span></a>
+        <a class="quest" href="https://aashikasingh-png.github.io/aashika/cases/white-panda.pdf" target="_blank" rel="noopener noreferrer"><span class="block-q">?</span><span><small>Sales enablement</small><h3>White Panda</h3><p>Early-adopter research for Passion Bits. Whatfix is the starting fit, then SaaS, enterprise, consulting, finance, healthcare, and manufacturing.</p></span></a>
+        <a class="quest" href="https://aashikasingh-png.github.io/aashika/cases/product-space.pdf" target="_blank" rel="noopener noreferrer"><span class="block-q">?</span><span><small>Edtech: growth</small><h3>Product Space</h3><p>Awareness and acquisition for a product-management course, with separate paths for professionals and students.</p></span></a>
+        <a class="quest" href="https://aashikasingh-png.github.io/aashika/cases/slice-bank-statements.pdf" target="_blank" rel="noopener noreferrer"><span class="block-q">?</span><span><small>Fintech: PRD</small><h3>Slice bank statements</h3><p>Bring North East Small Finance Bank savings statements into the Slice app: view, download, search, categorize, and alerts.</p></span></a>
+        <a class="quest" href="https://lime-polka-abf.notion.site/590c394bf07548b0806988695d4cdaca" target="_blank" rel="noopener noreferrer"><span class="block-q">?</span><span><small>Games</small><h3>Clash Rumble</h3><p>A roadmap, an art-asset model across a 9-month build and a 6-month soft launch, and a design specification.</p></span></a>
+      </div>
+      <div class="level-nav">
+        <a class="btn-8" href="#w5">&larr; World 5</a>
+        <a class="btn-8 gold" href="#w7">The castle &rarr;</a>
+      </div>
+    </article>
+  </div>
+</section>
+
+<!-- ============ SAVANA MAIN QUEST ============ -->
+<section class="level deep" id="savana" data-hud="Bonus">
+  <div class="inner">
+    <article class="dialog">
+      <p class="kicker">Main quest · Fashion: D2C</p>
+      <h1>Savana</h1>
+      <p class="mission-box">How a digital-first fashion brand uses trend velocity, social commerce, and a mobile-first shop to win Gen Z's attention in India's D2C market.</p>
+      <h2>Why Savana</h2>
+      <p>Savana is where fashion retail in India is heading: a digital-first, Gen Z brand with a strong presence at home and a read on international trends. Design, pricing psychology, and loyalty have to work as one system if growth is going to last.</p>
+      <ul class="log">
+        <li><b>Trend velocity:</b> rapid design-to-launch cycles</li>
+        <li><b>Social commerce:</b> influencer-led discovery</li>
+        <li><b>Mobile-first shopping:</b> an app-centric experience</li>
+      </ul>
+      <h2>What makes it a strong product</h2>
+      <div class="cards">
+        <div class="card"><h3>Trend velocity</h3><p>Rapid design-to-launch, with a catalogue that mirrors Instagram, TikTok, and Pinterest in near real time. It feels current, not seasonal.</p></div>
+        <div class="card"><h3>Mobile-first</h3><p>Discovery, wishlist, checkout, and payment live in the app. Push notifications cover drops, offers, and restocks.</p></div>
+        <div class="card"><h3>Coupons as product</h3><p>A coupon is waiting almost every time the app opens. Predictable discounts lower checkout hesitation and create a small win before the purchase.</p></div>
+        <div class="card"><h3>Savana Club</h3><p>The loyalty engine: Explorer, Enthusiast, Insider, then Icon. Icon perks include shopping rewards, member pricing, birthday surprises, and VIP service.</p></div>
+      </div>
+      <h2>What I would build next</h2>
+      <p>Standard delivery is about 21 days, which breaks the impulse that fashion depends on. The catalogue is also still focused on women.</p>
+      <div class="cards">
+        <div class="card"><h3>1: 60-minute express</h3><p>Metro-first delivery for high-demand SKUs, through dark stores.</p></div>
+        <div class="card"><h3>2: Buy the Look</h3><p>One tap to purchase a full influencer-curated outfit.</p></div>
+        <div class="card"><h3>3: Men's fashion</h3><p>Capsule drops first: streetwear, casual, party. Test demand with influencers before a full expansion.</p></div>
+      </div>
+      <h2>Takeaway</h2>
+      <p>Savana works because it solves global fashion access for budget-conscious Indian shoppers, it understands Gen Z, and it joins trends, pricing psychology, loyalty, and technology.</p>
+      <div class="level-nav">
+        <a class="btn-8" href="#w6">&larr; Bonus stages</a>
+        <a class="btn-8 gold" href="https://aashikasingh-png.github.io/aashika/cases/savana.pdf" target="_blank" rel="noopener noreferrer">Read the full deck</a>
+      </div>
+    </article>
+  </div>
+</section>
+
+<!-- ============ WORLD 7: THE CASTLE ============ -->
+<section class="level castle" id="w7" data-hud="World 7-1">
+  <div class="inner">
+    <div class="castle-art" aria-hidden="true">
+      <div class="castle-flag"></div>
+      <div class="castle-towers"><div class="castle-tower"></div><div class="castle-tower"></div></div>
+      <div class="castle-body"></div>
+    </div>
+    <article class="dialog">
+      <p class="kicker hot">World 7-1 · The castle gates are open</p>
+      <h1>Thank you, player!<br />The next role is in this castle.</h1>
+      <p class="mission-box">Mission: APM and PM roles. Someone who can sit with customers, write the spec, and still read the API.</p>
+      <h2>Inventory</h2>
+      <p style="font-family:var(--hud); font-size:0.5rem; color:var(--gold-dark); margin-bottom:0.3rem;">PRODUCT AND RESEARCH</p>
+      <ul class="pills">
+        <li>User interviews</li><li>A/B testing</li><li>Amplitude</li><li>CleverTap</li><li>Google Analytics</li><li>Metabase</li><li>Houseware</li><li>Figma</li><li>Whimsical</li>
+      </ul>
+      <p style="font-family:var(--hud); font-size:0.5rem; color:var(--gold-dark); margin-bottom:0.3rem;">FROM THE ENGINEERING YEARS</p>
+      <ul class="pills">
+        <li>Java</li><li>Python</li><li>JavaScript</li><li>TypeScript</li><li>React</li><li>Spring Boot</li><li>MySQL</li><li>MongoDB</li><li>Kong</li><li>Postman</li>
+      </ul>
+      <h2>Send a message</h2>
+      <ul class="contact-list">
+        <li><span>Email</span><a href="mailto:aashikapm884@gmail.com">aashikapm884@gmail.com</a></li>
+        <li><span>Phone</span><a href="tel:+919871757442">+91 98717 57442</a></li>
+        <li><span>LinkedIn</span><a href="https://www.linkedin.com/in/aashika7" target="_blank" rel="noopener noreferrer">linkedin.com/in/aashika7</a></li>
+        <li><span>Twitter</span><a href="https://x.com/snorlaxnotfound" target="_blank" rel="noopener noreferrer">x.com/snorlaxnotfound</a></li>
+        <li><span>Base</span><b>Bangalore, India</b></li>
+      </ul>
+      <div class="level-nav">
+        <a class="btn-8 gold" href="mailto:aashikapm884@gmail.com">Email</a>
+        <a class="btn-8 gold" href="https://lime-polka-abf.notion.site/9a37559e352d484a8141e010d710416d" target="_blank" rel="noopener noreferrer">Resume</a>
+        <a class="btn-8" href="#start">Play again</a>
+      </div>
+    </article>
+  </div>
+</section>
+
+<footer class="credit">
+  <b>Game over? No. Game on.</b>
+  Designed and built by Aashika Singh. Last updated November 2026.
+</footer>
+
+<script>
+(function () {
+  // Coin counter: collect a coin the first time each world scrolls into view
+  var count = 0;
+  var meter = document.getElementById('coinCount');
+  var hudWorld = document.getElementById('hudWorld');
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  var sections = document.querySelectorAll('[data-hud]');
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        var el = e.target;
+        hudWorld.textContent = el.getAttribute('data-hud');
+        if (!el.dataset.coined && el.classList.contains('level')) {
+          el.dataset.coined = '1';
+          count += 1;
+          meter.textContent = 'x' + pad(count);
+          meter.parentElement.classList.remove('coin-pop');
+          void meter.parentElement.offsetWidth;
+          meter.parentElement.classList.add('coin-pop');
+        }
+      });
+    }, { rootMargin: '-40% 0px -50% 0px' });
+    sections.forEach(function (s) { io.observe(s); });
+  }
+})();
+</script>
+</body>
+</html>
